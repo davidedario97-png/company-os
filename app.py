@@ -4,12 +4,7 @@ import json
 import sqlite3
 import os
 from datetime import datetime
-import urllib.request
-import urllib.parse
 
-# ============================================================
-# PAGE CONFIG
-# ============================================================
 st.set_page_config(
     page_title="VIKIphone OS",
     page_icon="📡",
@@ -17,169 +12,317 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ============================================================
-# CSS DESIGN
-# ============================================================
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
+/* ROOT VARIABLEN */
+:root {
+    --viki-blue: #29B6F6;
+    --viki-blue-dark: #0288D1;
+    --viki-blue-light: #4FC3F7;
+    --viki-blue-glow: rgba(41, 182, 246, 0.15);
+    --bg-black: #080808;
+    --bg-card: #111111;
+    --bg-card-hover: #161616;
+    --bg-input: #0e0e0e;
+    --border: #1e1e1e;
+    --border-active: #29B6F6;
+    --text-primary: #ffffff;
+    --text-secondary: #888888;
+    --text-muted: #444444;
+    --success: #4CAF50;
+    --warning: #FF9800;
+    --danger: #f44336;
+}
+
+/* GLOBAL */
 html, body, [data-testid="stAppViewContainer"] {
-    background: linear-gradient(135deg, #010b1f 0%, #020d2e 50%, #050520 100%);
-    color: #e0f0ff;
-    font-family: 'Rajdhani', sans-serif;
+    background-color: var(--bg-black) !important;
+    color: var(--text-primary) !important;
+    font-family: 'Inter', sans-serif !important;
 }
-[data-testid="stHeader"] { background: transparent; }
+[data-testid="stHeader"] { background: transparent !important; display: none; }
+[data-testid="stToolbar"] { display: none; }
+.block-container { padding: 24px 32px !important; max-width: 100% !important; }
+
+/* SIDEBAR */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #020c28 0%, #010817 100%) !important;
-    border-right: 1px solid #1a3a6e;
-    box-shadow: 4px 0 30px rgba(0,120,255,0.15);
+    background-color: #0a0a0a !important;
+    border-right: 1px solid var(--border) !important;
+    width: 240px !important;
 }
+[data-testid="stSidebar"] > div { padding: 0 !important; }
+
+/* RADIO BUTTONS */
+[data-testid="stSidebar"] .stRadio > div { gap: 2px !important; }
+[data-testid="stSidebar"] .stRadio label {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 10px 16px !important;
+    color: var(--text-secondary) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+    display: block !important;
+    width: 100% !important;
+}
+[data-testid="stSidebar"] .stRadio label:hover {
+    background: var(--viki-blue-glow) !important;
+    color: var(--viki-blue) !important;
+}
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
+    color: var(--text-secondary) !important;
+    font-size: 11px !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+/* BUTTONS */
 .stButton > button {
-    background: linear-gradient(135deg, #0a1628, #0d1f3c) !important;
-    color: #00d4ff !important;
-    border: 1px solid #00d4ff !important;
-    border-radius: 4px !important;
-    font-family: 'Rajdhani', sans-serif !important;
+    background: var(--viki-blue) !important;
+    color: #000000 !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-family: 'Inter', sans-serif !important;
     font-weight: 600 !important;
-    letter-spacing: 2px !important;
-    text-transform: uppercase !important;
-    transition: all 0.3s !important;
-    box-shadow: 0 0 15px rgba(0,212,255,0.2) !important;
+    font-size: 13px !important;
+    padding: 10px 20px !important;
+    transition: all 0.2s !important;
+    box-shadow: 0 0 20px rgba(41,182,246,0.3) !important;
 }
 .stButton > button:hover {
-    background: rgba(0,212,255,0.1) !important;
-    box-shadow: 0 0 25px rgba(0,212,255,0.5) !important;
+    background: var(--viki-blue-light) !important;
+    box-shadow: 0 0 30px rgba(41,182,246,0.5) !important;
+    transform: translateY(-1px) !important;
 }
-.stTextInput > div > div > input, .stTextArea > div > div > textarea {
-    background: rgba(0,20,60,0.8) !important;
-    border: 1px solid #1a3a6e !important;
-    border-radius: 4px !important;
-    color: #e0f0ff !important;
-    font-family: 'Rajdhani', sans-serif !important;
+
+/* SECONDARY BUTTON */
+.btn-secondary > button {
+    background: var(--bg-card) !important;
+    color: var(--viki-blue) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: none !important;
 }
-.stTextInput > div > div > input:focus, .stTextArea > div > div > textarea:focus {
-    border-color: #00d4ff !important;
-    box-shadow: 0 0 15px rgba(0,212,255,0.3) !important;
+.btn-secondary > button:hover {
+    border-color: var(--viki-blue) !important;
+    background: var(--viki-blue-glow) !important;
 }
-.stTextInput label, .stTextArea label, .stMultiSelect label, .stSelectbox label {
-    color: #8ab4d4 !important;
-    font-family: 'Rajdhani', sans-serif !important;
-    font-weight: 600 !important;
-    letter-spacing: 1px !important;
-    text-transform: uppercase !important;
+
+/* INPUTS */
+.stTextInput > div > div > input,
+.stTextArea > div > div > textarea,
+.stSelectbox > div > div {
+    background: var(--bg-input) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    color: var(--text-primary) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 13px !important;
+}
+.stTextInput > div > div > input:focus,
+.stTextArea > div > div > textarea:focus {
+    border-color: var(--viki-blue) !important;
+    box-shadow: 0 0 0 3px rgba(41,182,246,0.1) !important;
+}
+.stTextInput label, .stTextArea label, .stSelectbox label {
+    color: var(--text-secondary) !important;
+    font-family: 'Inter', sans-serif !important;
     font-size: 12px !important;
+    font-weight: 500 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
 }
-[data-testid="stSidebar"] .stRadio label {
-    color: #8ab4d4 !important;
-    font-family: 'Rajdhani', sans-serif !important;
-    font-size: 15px !important;
-    font-weight: 600 !important;
-    letter-spacing: 1px !important;
-}
-.cyber-divider {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, #1a3a6e, #00d4ff, #1a3a6e, transparent);
-    margin: 16px 0;
-}
-.metric-card {
-    background: linear-gradient(135deg, rgba(0,30,80,0.8), rgba(0,15,50,0.9));
-    border: 1px solid #1a3a6e;
-    border-radius: 8px;
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #222; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--viki-blue); }
+
+/* KARTEN */
+.viki-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
     padding: 20px;
-    text-align: center;
+    transition: all 0.2s;
+}
+.viki-card:hover { border-color: #2a2a2a; }
+
+.metric-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 24px;
     position: relative;
     overflow: hidden;
 }
-.metric-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, #00d4ff, #7b2fff);
-}
-.metric-value {
-    font-family: 'Orbitron', monospace;
-    font-size: 28px;
+.metric-number {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 32px;
     font-weight: 700;
-    color: #00d4ff;
-    text-shadow: 0 0 20px rgba(0,212,255,0.5);
-}
-.metric-label {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 11px;
-    color: #8ab4d4;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-top: 4px;
-}
-.config-box {
-    background: rgba(0,20,60,0.5);
-    border: 1px solid #1a3a6e;
-    border-radius: 8px;
-    padding: 24px;
-    margin-bottom: 16px;
-}
-.config-box-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 12px;
-    color: #00d4ff;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    margin-bottom: 16px;
-}
-.result-card {
-    background: rgba(0,15,40,0.8);
-    border: 1px solid #1a3a6e;
-    border-left: 3px solid #00d4ff;
-    border-radius: 4px;
-    padding: 16px 20px;
-    margin-bottom: 12px;
-}
-.result-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 13px;
-    color: #ffffff;
-    margin-bottom: 6px;
-}
-.result-source {
-    font-size: 11px;
-    color: #4a7a9b;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
-}
-.result-summary {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 14px;
-    color: #8ab4d4;
-    line-height: 1.5;
-}
-.agent-card {
-    background: rgba(0,20,60,0.5);
-    border: 1px solid #1a3a6e;
-    border-left: 3px solid #7b2fff;
-    border-radius: 4px;
-    padding: 16px 20px;
-    margin-bottom: 12px;
-}
-.page-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 22px;
-    font-weight: 700;
-    color: #ffffff;
-    text-shadow: 0 0 30px rgba(0,212,255,0.4);
-}
-.section-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 11px;
-    color: #00d4ff;
-    letter-spacing: 4px;
-    text-transform: uppercase;
+    color: var(--text-primary);
+    line-height: 1;
     margin-bottom: 4px;
 }
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: #010b1f; }
-::-webkit-scrollbar-thumb { background: #1a3a6e; border-radius: 2px; }
+.metric-number span {
+    font-size: 14px;
+    color: var(--success);
+    font-weight: 500;
+    margin-left: 6px;
+}
+.metric-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+.metric-icon {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 36px;
+    height: 36px;
+    background: var(--viki-blue-glow);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+/* AGENT TABS */
+.agent-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-right: 6px;
+}
+.agent-pill.active {
+    background: var(--viki-blue-glow);
+    border-color: var(--viki-blue);
+    color: var(--viki-blue);
+}
+
+/* RESULT CARDS */
+.result-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 8px;
+    transition: all 0.2s;
+}
+.result-item:hover {
+    border-color: #2a2a2a;
+    background: var(--bg-card-hover);
+}
+.result-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.badge-trend { background: rgba(41,182,246,0.1); color: var(--viki-blue); }
+.badge-konkurrenz { background: rgba(244,67,54,0.1); color: #f44336; }
+.badge-chance { background: rgba(76,175,80,0.1); color: #4CAF50; }
+.result-title-text {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 8px 0 4px;
+}
+.result-summary-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+.result-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 8px;
+}
+
+/* CONFIG SECTION */
+.config-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 12px;
+}
+.config-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* PAGE HEADER */
+.page-header {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+}
+.page-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+}
+
+/* NAV LABEL */
+.nav-section {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 16px 16px 6px;
+}
+
+/* DIVIDER */
+.viki-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 16px 0;
+}
+
+/* COMING SOON */
+.coming-soon {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+}
+
+/* STATUS DOT */
+.status-online { color: var(--success); font-size: 10px; }
+
+/* RELEVANCE */
+.rel-high { color: #4CAF50; font-size: 11px; font-weight: 600; }
+.rel-mid  { color: #FF9800; font-size: 11px; font-weight: 600; }
+.rel-low  { color: #555; font-size: 11px; font-weight: 600; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -189,7 +332,6 @@ html, body, [data-testid="stAppViewContainer"] {
 def init_db():
     conn = sqlite3.connect("vikiphone_os.db")
     c = conn.cursor()
-    # Scout Config
     c.execute("""CREATE TABLE IF NOT EXISTS scout_config (
         id INTEGER PRIMARY KEY,
         keywords TEXT,
@@ -197,77 +339,59 @@ def init_db():
         language TEXT DEFAULT 'de',
         updated_at TEXT
     )""")
-    # Scout Results
     c.execute("""CREATE TABLE IF NOT EXISTS scout_results (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        type TEXT,
-        title TEXT,
-        source TEXT,
-        summary TEXT,
-        relevance TEXT,
-        created_at TEXT
+        type TEXT, title TEXT, source TEXT,
+        summary TEXT, relevance TEXT, created_at TEXT
     )""")
-    # Default config
     c.execute("SELECT COUNT(*) FROM scout_config")
     if c.fetchone()[0] == 0:
-        default_keywords = json.dumps([
-            "KI Telefonassistent", "Voice AI DACH", "KI Telefon Arztpraxis",
-            "Telefonassistent SaaS", "VIKIphone", "KI Rezeption",
-            "AI phone assistant Germany", "verpasste Anrufe Lösung"
-        ])
-        default_competitors = json.dumps([
-            "fonio.ai", "VITAS Telefonassistent", "HalloPetra",
-            "heykiki", "Parloa", "Cognigy", "voiceOne", "Aaron.ai",
-            "Synthflow", "smao.ai", "Safina AI", "RufLab"
-        ])
-        c.execute("INSERT INTO scout_config (keywords, competitors, language, updated_at) VALUES (?,?,?,?)",
-                  (default_keywords, default_competitors, "de", datetime.now().isoformat()))
-    conn.commit()
-    conn.close()
+        kw = json.dumps(["KI Telefonassistent","Voice AI DACH","KI Telefon Arztpraxis",
+            "Telefonassistent SaaS","VIKIphone","KI Rezeption",
+            "AI phone assistant Germany","verpasste Anrufe Lösung",
+            "24/7 Telefonservice","DSGVO Telefonassistent"])
+        comp = json.dumps(["fonio.ai","VITAS Telefonassistent","HalloPetra","heykiki",
+            "Parloa","Cognigy","voiceOne","Aaron.ai","Synthflow","smao.ai","Safina AI","RufLab"])
+        c.execute("INSERT INTO scout_config VALUES (1,?,?,'de',?)", (kw, comp, datetime.now().isoformat()))
+    conn.commit(); conn.close()
 
 def get_scout_config():
     conn = sqlite3.connect("vikiphone_os.db")
     c = conn.cursor()
     c.execute("SELECT keywords, competitors, language FROM scout_config WHERE id=1")
-    row = c.fetchone()
-    conn.close()
-    if row:
-        return json.loads(row[0]), json.loads(row[1]), row[2]
+    row = c.fetchone(); conn.close()
+    if row: return json.loads(row[0]), json.loads(row[1]), row[2]
     return [], [], "de"
 
-def save_scout_config(keywords, competitors, language):
+def save_scout_config(kw, comp, lang):
     conn = sqlite3.connect("vikiphone_os.db")
     c = conn.cursor()
-    c.execute("UPDATE scout_config SET keywords=?, competitors=?, language=?, updated_at=? WHERE id=1",
-              (json.dumps(keywords), json.dumps(competitors), language, datetime.now().isoformat()))
-    conn.commit()
-    conn.close()
+    c.execute("UPDATE scout_config SET keywords=?,competitors=?,language=?,updated_at=? WHERE id=1",
+              (json.dumps(kw), json.dumps(comp), lang, datetime.now().isoformat()))
+    conn.commit(); conn.close()
 
-def save_scout_results(results):
+def save_results(results):
     conn = sqlite3.connect("vikiphone_os.db")
     c = conn.cursor()
     for r in results:
-        c.execute("INSERT INTO scout_results (type, title, source, summary, relevance, created_at) VALUES (?,?,?,?,?,?)",
+        c.execute("INSERT INTO scout_results (type,title,source,summary,relevance,created_at) VALUES (?,?,?,?,?,?)",
                   (r.get("type",""), r.get("title",""), r.get("source",""),
                    r.get("summary",""), r.get("relevance",""), datetime.now().isoformat()))
-    conn.commit()
-    conn.close()
+    conn.commit(); conn.close()
 
-def get_scout_results(limit=20):
+def get_results(limit=30):
     conn = sqlite3.connect("vikiphone_os.db")
     c = conn.cursor()
-    c.execute("SELECT type, title, source, summary, relevance, created_at FROM scout_results ORDER BY id DESC LIMIT ?", (limit,))
-    rows = c.fetchall()
-    conn.close()
+    c.execute("SELECT type,title,source,summary,relevance,created_at FROM scout_results ORDER BY id DESC LIMIT ?", (limit,))
+    rows = c.fetchall(); conn.close()
     return rows
 
-def get_result_count():
+def get_count():
     conn = sqlite3.connect("vikiphone_os.db")
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM scout_results")
-    count = c.fetchone()[0]
-    conn.close()
-    return count
+    n = c.fetchone()[0]; conn.close()
+    return n
 
 init_db()
 
@@ -278,129 +402,81 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
-if "current_agent" not in st.session_state:
-    st.session_state.current_agent = None
 
 USERS = {"admin": "admin123"}
 
-def check_login(u, p):
-    return u in USERS and USERS[u] == p
-
 # ============================================================
-# SCOUT AGENT LOGIK
+# SCOUT
 # ============================================================
-def run_scout_agent(keywords, competitors, language):
-    api_key = st.secrets.get("ANTHROPIC_API_KEY", os.environ.get("ANTHROPIC_API_KEY", ""))
+def run_scout(keywords, competitors, language):
+    api_key = st.secrets.get("ANTHROPIC_API_KEY", os.environ.get("ANTHROPIC_API_KEY",""))
     if not api_key:
-        st.error("⚠ ANTHROPIC_API_KEY nicht gefunden!")
-        return []
-
+        st.error("ANTHROPIC_API_KEY fehlt!"); return []
     client = anthropic.Anthropic(api_key=api_key)
-
     prompt = f"""Du bist der Scout-Agent für VIKIphone (KI-Telefonassistenz SaaS von Rynon).
+Analysiere den DACH-Markt für KI-Telefonassistenten.
 
-Deine Aufgabe: Analysiere den Markt für KI-Telefonassistenten im DACH-Raum und erstelle einen Marktbericht.
+KEYWORDS: {', '.join(keywords)}
+KONKURRENTEN: {', '.join(competitors)}
 
-KEYWORDS ZU ÜBERWACHEN: {', '.join(keywords)}
-KONKURRENTEN ZU ANALYSIEREN: {', '.join(competitors)}
-SPRACHE: {language}
+VIKIphone USPs: Zero-Latency Konversation, DSGVO Medical Mode, 24/7 Betrieb, Webhook API, automatische Datenlöschung nach 30 Tagen.
 
-Erstelle einen detaillierten Marktbericht mit folgenden Abschnitten und gib die Antwort als JSON-Array zurück:
+Erstelle 10 Einträge als JSON-Array:
+- 3x type "TREND" (aktuelle Markttrends DACH 2026)
+- 4x type "KONKURRENZ" (fonio.ai, VITAS, HalloPetra, voiceOne analysieren)
+- 3x type "CHANCE" (konkrete Chancen für VIKIphone)
 
-[
-  {{
-    "type": "TREND",
-    "title": "Titel des Trends",
-    "source": "Marktbeobachtung DACH 2026",
-    "summary": "Detaillierte Beschreibung des Trends (2-3 Sätze) und warum er für VIKIphone relevant ist",
-    "relevance": "HOCH / MITTEL / NIEDRIG"
-  }},
-  {{
-    "type": "KONKURRENZ",
-    "title": "Konkurrent: [Name]",
-    "source": "Wettbewerbsanalyse",
-    "summary": "Was macht dieser Konkurrent? Stärken/Schwächen vs VIKIphone? Preismodell?",
-    "relevance": "HOCH / MITTEL / NIEDRIG"
-  }},
-  {{
-    "type": "CHANCE",
-    "title": "Marktchance: [Beschreibung]",
-    "source": "Strategische Analyse",
-    "summary": "Welche konkrete Chance gibt es für VIKIphone? Wie kann VIKIphone profitieren?",
-    "relevance": "HOCH / MITTEL / NIEDRIG"
-  }}
-]
+Format:
+[{{"type":"TREND","title":"...","source":"Marktanalyse DACH 2026","summary":"2-3 Sätze detailliert...","relevance":"HOCH"}}]
 
-Erstelle mindestens:
-- 3 aktuelle TREND Einträge (KI-Telefonie Markt DACH 2026)
-- 4 KONKURRENZ Analysen (fokus auf fonio.ai, VITAS, HalloPetra, voiceOne)
-- 3 CHANCE Einträge (spezifisch für VIKIphone USPs: Zero-Latency, DSGVO-Medical-Mode, Webhook-API)
-
-VIKIphone USPs (nutze diese für die Analyse):
-- Zero-Latency Konversation (kein Gedenksekunden)
-- DSGVO Medical Mode (Arztpraxen)
-- 24/7 Telefonassistenz
-- Dedizierte Festnetz-Rufnummer
-- Webhook API für CRM-Integration
-- Automatischer 30-Tage DSGVO-Datenlöschung
-
-Antworte NUR mit dem JSON-Array, kein anderer Text."""
-
+Antworte NUR mit dem JSON-Array."""
     try:
-        message = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=3000,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        response_text = message.content[0].text.strip()
-        # JSON extrahieren
-        if "```json" in response_text:
-            response_text = response_text.split("```json")[1].split("```")[0].strip()
-        elif "```" in response_text:
-            response_text = response_text.split("```")[1].split("```")[0].strip()
-        results = json.loads(response_text)
-        return results
+        msg = client.messages.create(
+            model="claude-haiku-4-5-20251001", max_tokens=3000,
+            messages=[{"role":"user","content":prompt}])
+        text = msg.content[0].text.strip()
+        if "```json" in text: text = text.split("```json")[1].split("```")[0].strip()
+        elif "```" in text: text = text.split("```")[1].split("```")[0].strip()
+        return json.loads(text)
     except Exception as e:
-        st.error(f"⚠ Fehler beim Scout: {str(e)}")
-        return []
+        st.error(f"Scout Fehler: {e}"); return []
 
 # ============================================================
 # LOGIN
 # ============================================================
 if not st.session_state.logged_in:
-    col1, col2, col3 = st.columns([1, 1.2, 1])
+    col1, col2, col3 = st.columns([1,1,1])
     with col2:
+        st.markdown("<div style='height:60px'></div>", unsafe_allow_html=True)
+        # Logo & Titel
         st.markdown("""
-        <div style='background: linear-gradient(135deg, rgba(0,20,60,0.9), rgba(0,8,30,0.95));
-                    border: 1px solid #1a3a6e; border-radius: 8px; padding: 48px 40px;
-                    position: relative; overflow: hidden;'>
-            <div style='position:absolute; top:0; left:0; right:0; height:2px;
-                        background: linear-gradient(90deg, #7b2fff, #00d4ff, #7b2fff);'></div>
-            <div style='font-family: Orbitron; font-size: 28px; font-weight: 900;
-                        background: linear-gradient(135deg, #00d4ff, #7b2fff);
-                        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-                        text-align: center; margin-bottom: 4px;'>VIKIphone OS</div>
-            <div style='font-family: Rajdhani; font-size: 12px; color: #8ab4d4;
-                        letter-spacing: 4px; text-transform: uppercase; text-align: center;
-                        margin-bottom: 32px;'>Autonomes KI · Command Center</div>
+        <div style='text-align:center; margin-bottom:32px;'>
+            <div style='font-size:48px; margin-bottom:8px;'>🔵</div>
+            <div style='font-family: Plus Jakarta Sans; font-size:28px; font-weight:800;
+                        color:#29B6F6; margin-bottom:4px;'>VIKIphone</div>
+            <div style='font-size:13px; color:#555; font-weight:500;'>Company OS · Internal Dashboard</div>
         </div>
         """, unsafe_allow_html=True)
-        st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
-        username = st.text_input("BENUTZERNAME")
-        password = st.text_input("PASSWORT", type="password")
-        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-        if st.button("⟶  ZUGANG ANFORDERN", use_container_width=True):
-            if check_login(username, password):
+
+        st.markdown("""
+        <div style='background:#111; border:1px solid #1e1e1e; border-radius:16px; padding:32px;'>
+        """, unsafe_allow_html=True)
+
+        username = st.text_input("Username", placeholder="admin")
+        password = st.text_input("Password", type="password", placeholder="••••••••")
+        st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+        if st.button("Sign in", use_container_width=True):
+            if username in USERS and USERS[username] == password:
                 st.session_state.logged_in = True
                 st.session_state.username = username
                 st.rerun()
             else:
-                st.error("⚠  ZUGANG VERWEIGERT")
+                st.error("Invalid credentials")
+
         st.markdown("""
-        <div style='text-align:center; margin-top:16px;'>
-            <span style='font-family: Rajdhani; font-size:11px; color:#1a3a6e; letter-spacing:2px;'>
-            STANDARD: admin / admin123
-            </span>
+        <div style='text-align:center; margin-top:16px; font-size:12px; color:#333;'>
+            admin / admin123
+        </div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -411,241 +487,248 @@ else:
     # SIDEBAR
     with st.sidebar:
         st.markdown("""
-        <div style='padding: 20px 0 10px 0;'>
-            <div style='font-family: Orbitron; font-size: 18px; font-weight: 900;
-                        background: linear-gradient(135deg, #00d4ff, #7b2fff);
-                        -webkit-background-clip: text; -webkit-text-fill-color: transparent;'>
-                VIKIphone OS</div>
-            <div style='font-family: Rajdhani; font-size: 10px; color: #1a3a6e;
-                        letter-spacing: 3px;'>Command Center v1.1</div>
+        <div style='padding:20px 16px 12px;'>
+            <div style='display:flex; align-items:center; gap:10px; margin-bottom:4px;'>
+                <div style='font-size:22px;'>🔵</div>
+                <div>
+                    <div style='font-family: Plus Jakarta Sans; font-size:15px; font-weight:700; color:#29B6F6;'>VIKIphone</div>
+                    <div style='font-size:10px; color:#444; font-weight:500;'>Company OS</div>
+                </div>
+            </div>
         </div>
+        <div style='height:1px; background:#1e1e1e; margin: 0 16px 12px;'></div>
         """, unsafe_allow_html=True)
-        st.markdown("<div class='cyber-divider'></div>", unsafe_allow_html=True)
+
+        # User
         st.markdown(f"""
-        <div style='font-family: Rajdhani; font-size: 12px; color: #8ab4d4; letter-spacing: 2px; text-transform: uppercase;'>Operator</div>
-        <div style='font-family: Orbitron; font-size: 14px; color: #fff; margin-bottom: 12px;'>{st.session_state.username.upper()}</div>
-        <span style='background: rgba(0,255,136,0.1); border: 1px solid #00ff88; color: #00ff88;
-                     font-family: Rajdhani; font-size: 11px; font-weight: 600; letter-spacing: 2px;
-                     padding: 3px 10px; border-radius: 2px;'>● SYSTEM ONLINE</span>
+        <div style='padding: 8px 16px; margin-bottom:8px;'>
+            <div style='display:flex; align-items:center; gap:10px;'>
+                <div style='width:32px; height:32px; background: rgba(41,182,246,0.15);
+                            border-radius:8px; display:flex; align-items:center; justify-content:center;
+                            font-size:14px;'>👤</div>
+                <div>
+                    <div style='font-size:13px; font-weight:600; color:#fff;'>{st.session_state.username.title()}</div>
+                    <div style='font-size:11px; color:#4CAF50;'>● Online</div>
+                </div>
+            </div>
+        </div>
+        <div style='height:1px; background:#1e1e1e; margin: 0 16px 8px;'></div>
+        <div style='padding: 4px 16px; font-size:10px; font-weight:600; color:#333; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;'>Navigation</div>
         """, unsafe_allow_html=True)
-        st.markdown("<div class='cyber-divider'></div>", unsafe_allow_html=True)
-        seite = st.radio("Navigation", [
-            "📡  MARKETING", "🎯  VERTRIEB", "🛰  SUPPORT", "🗄  BACKOFFICE", "👾  HR"
+
+        seite = st.radio("nav", [
+            "📡  Marketing", "🎯  Vertrieb", "🛰  Support", "🗄  Backoffice", "👾  HR"
         ], label_visibility="collapsed")
-        st.markdown("<div class='cyber-divider'></div>", unsafe_allow_html=True)
-        if st.button("⏻  LOGOUT", use_container_width=True):
+
+        st.markdown("""
+        <div style='height:1px; background:#1e1e1e; margin: 8px 16px;'></div>
+        """, unsafe_allow_html=True)
+
+        if st.button("Sign out", use_container_width=True):
             st.session_state.logged_in = False
             st.rerun()
 
-    # MARKETING MODULE
-    if "MARKETING" in seite:
-        st.markdown("<div class='section-title'>VIKIphone OS · MODUL</div>", unsafe_allow_html=True)
-        st.markdown("<div class='page-title'>📡 MARKETING ZENTRALE</div>", unsafe_allow_html=True)
-        st.markdown("<div class='cyber-divider'></div>", unsafe_allow_html=True)
+    # ============================================================
+    # MARKETING
+    # ============================================================
+    if "Marketing" in seite:
+        st.markdown("""
+        <div class='page-header'>Marketing Zentrale</div>
+        <div class='page-sub'>VIKIphone Growth · KI-gesteuerte Marktanalyse & Content</div>
+        """, unsafe_allow_html=True)
 
         # Metriken
-        result_count = get_result_count()
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.markdown(f"<div class='metric-card'><div class='metric-value'>{result_count}</div><div class='metric-label'>SCOUT ERGEBNISSE</div></div>", unsafe_allow_html=True)
-        with col2:
-            st.markdown("<div class='metric-card'><div class='metric-value'>12</div><div class='metric-label'>KONKURRENTEN</div></div>", unsafe_allow_html=True)
-        with col3:
-            st.markdown("<div class='metric-card'><div class='metric-value'>0</div><div class='metric-label'>POSTS BEREIT</div></div>", unsafe_allow_html=True)
-        with col4:
-            st.markdown("<div class='metric-card'><div class='metric-value'>0</div><div class='metric-label'>SEO ARTIKEL</div></div>", unsafe_allow_html=True)
+        count = get_count()
+        kw, comp, lang = get_scout_config()
+        c1,c2,c3,c4 = st.columns(4)
+        with c1:
+            st.markdown(f"""<div class='metric-card'>
+                <div class='metric-icon'>📡</div>
+                <div class='metric-number'>{count}</div>
+                <div class='metric-label'>Scout Ergebnisse</div>
+            </div>""", unsafe_allow_html=True)
+        with c2:
+            st.markdown(f"""<div class='metric-card'>
+                <div class='metric-icon'>🎯</div>
+                <div class='metric-number'>{len(comp)}</div>
+                <div class='metric-label'>Konkurrenten</div>
+            </div>""", unsafe_allow_html=True)
+        with c3:
+            st.markdown("""<div class='metric-card'>
+                <div class='metric-icon'>✍️</div>
+                <div class='metric-number'>0</div>
+                <div class='metric-label'>Posts bereit</div>
+            </div>""", unsafe_allow_html=True)
+        with c4:
+            st.markdown("""<div class='metric-card'>
+                <div class='metric-icon'>🔍</div>
+                <div class='metric-number'>0</div>
+                <div class='metric-label'>SEO Artikel</div>
+            </div>""", unsafe_allow_html=True)
 
-        st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
 
         # AGENT AUSWAHL
-        agent_tab = st.radio("Agent auswählen:", [
-            "🔭 SCOUT", "🧠 GROWTH HACKER", "✍️ CREATOR",
-            "🏥 NISCHEN-SPEZIALIST", "🔍 SEO-ARCHITEKT"
+        agent = st.radio("Agent", [
+            "🔭 Scout", "🧠 Growth Hacker", "✍️ Creator", "🏥 Nischen-Spezialist", "🔍 SEO-Architekt"
         ], horizontal=True, label_visibility="collapsed")
 
-        st.markdown("<div class='cyber-divider'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='viki-divider'></div>", unsafe_allow_html=True)
 
-        # ============================================================
-        # SCOUT AGENT
-        # ============================================================
-        if "SCOUT" in agent_tab:
-            st.markdown("<div class='section-title'>AGENT · KONFIGURATION</div>", unsafe_allow_html=True)
-            st.markdown("<div style='font-family: Orbitron; font-size: 16px; color: #fff; margin-bottom: 16px;'>🔭 SCOUT AGENT</div>", unsafe_allow_html=True)
-
-            keywords, competitors, language = get_scout_config()
-
-            col_config, col_run = st.columns([2, 1])
-
-            with col_config:
+        # SCOUT
+        if "Scout" in agent:
+            col_left, col_right = st.columns([2,1])
+            with col_left:
                 # Keywords
-                st.markdown("<div class='config-box'>", unsafe_allow_html=True)
-                st.markdown("<div class='config-box-title'>⚙ KEYWORDS KONFIGURATION</div>", unsafe_allow_html=True)
-
-                keywords_text = st.text_area(
-                    "KEYWORDS (ein Keyword pro Zeile)",
-                    value="\n".join(keywords),
-                    height=200,
-                    help="Der Scout sucht täglich nach diesen Keywords"
-                )
-
+                st.markdown("""<div class='config-section'>
+                    <div class='config-label'>⚙️ Keywords konfigurieren</div>
+                """, unsafe_allow_html=True)
+                kw_text = st.text_area("Ein Keyword pro Zeile", value="\n".join(kw), height=180, label_visibility="collapsed")
                 st.markdown("</div>", unsafe_allow_html=True)
 
                 # Konkurrenten
-                st.markdown("<div class='config-box'>", unsafe_allow_html=True)
-                st.markdown("<div class='config-box-title'>🎯 KONKURRENTEN ÜBERWACHUNG</div>", unsafe_allow_html=True)
-
-                competitors_text = st.text_area(
-                    "KONKURRENTEN (ein Name pro Zeile)",
-                    value="\n".join(competitors),
-                    height=200,
-                    help="Der Scout analysiert diese Konkurrenten täglich"
-                )
+                st.markdown("""<div class='config-section'>
+                    <div class='config-label'>🎯 Konkurrenten überwachen</div>
+                """, unsafe_allow_html=True)
+                comp_text = st.text_area("Ein Konkurrent pro Zeile", value="\n".join(comp), height=180, label_visibility="collapsed")
                 st.markdown("</div>", unsafe_allow_html=True)
 
-                # Sprache
-                lang = st.selectbox("AUSGABE-SPRACHE", ["de", "en"], index=0 if language == "de" else 1)
+                lang_sel = st.selectbox("Ausgabe-Sprache", ["de","en"], index=0 if lang=="de" else 1)
 
-                if st.button("💾  KONFIGURATION SPEICHERN", use_container_width=True):
-                    new_keywords = [k.strip() for k in keywords_text.split("\n") if k.strip()]
-                    new_competitors = [c.strip() for c in competitors_text.split("\n") if c.strip()]
-                    save_scout_config(new_keywords, new_competitors, lang)
-                    st.success("✅ Konfiguration gespeichert!")
+                if st.button("💾  Konfiguration speichern", use_container_width=True):
+                    new_kw = [k.strip() for k in kw_text.split("\n") if k.strip()]
+                    new_comp = [c.strip() for c in comp_text.split("\n") if c.strip()]
+                    save_scout_config(new_kw, new_comp, lang_sel)
+                    st.success("✅ Gespeichert!")
 
-            with col_run:
-                st.markdown("<div class='config-box'>", unsafe_allow_html=True)
-                st.markdown("<div class='config-box-title'>▶ SCOUT STARTEN</div>", unsafe_allow_html=True)
-                st.markdown("""
-                <div style='font-family: Rajdhani; font-size: 13px; color: #4a7a9b; margin-bottom: 16px;'>
-                    Der Scout analysiert den Markt und liefert:<br><br>
-                    ● Aktuelle Markttrends<br>
-                    ● Konkurrenz-Analyse<br>
-                    ● Marktchancen für VIKIphone<br>
-                </div>
+            with col_right:
+                st.markdown("""<div class='config-section'>
+                    <div class='config-label'>🔭 Scout starten</div>
+                    <div style='font-size:13px; color:#555; margin-bottom:16px; line-height:1.6;'>
+                        Claude analysiert den DACH-Markt und liefert:<br><br>
+                        <span style='color:#29B6F6'>●</span> Aktuelle Markttrends<br>
+                        <span style='color:#f44336'>●</span> Konkurrenz-Analyse<br>
+                        <span style='color:#4CAF50'>●</span> Marktchancen für VIKIphone
+                    </div>
                 """, unsafe_allow_html=True)
 
-                if st.button("🔭  JETZT SCANNEN", use_container_width=True):
-                    current_kw = [k.strip() for k in keywords_text.split("\n") if k.strip()]
-                    current_comp = [c.strip() for c in competitors_text.split("\n") if c.strip()]
-
-                    with st.spinner("Scout analysiert Markt..."):
-                        results = run_scout_agent(current_kw, current_comp, lang)
+                if st.button("▶  Jetzt scannen", use_container_width=True):
+                    cur_kw = [k.strip() for k in kw_text.split("\n") if k.strip()]
+                    cur_comp = [c.strip() for c in comp_text.split("\n") if c.strip()]
+                    with st.spinner("Scout analysiert..."):
+                        results = run_scout(cur_kw, cur_comp, lang_sel)
                         if results:
-                            save_scout_results(results)
-                            st.success(f"✅ {len(results)} Ergebnisse gefunden!")
+                            save_results(results)
+                            st.success(f"✅ {len(results)} neue Ergebnisse!")
                             st.rerun()
 
                 st.markdown("</div>", unsafe_allow_html=True)
 
-                # Status
-                st.markdown("<div class='config-box'>", unsafe_allow_html=True)
-                st.markdown("<div class='config-box-title'>📊 STATUS</div>", unsafe_allow_html=True)
-                st.markdown(f"""
-                <div style='font-family: Rajdhani; font-size: 13px; color: #8ab4d4;'>
-                    Gesamt Ergebnisse: <span style='color:#00d4ff'>{result_count}</span><br>
-                    Keywords aktiv: <span style='color:#00d4ff'>{len(keywords)}</span><br>
-                    Konkurrenten: <span style='color:#00d4ff'>{len(competitors)}</span>
-                </div>
-                """, unsafe_allow_html=True)
-                st.markdown("</div>", unsafe_allow_html=True)
+                st.markdown(f"""<div class='config-section'>
+                    <div class='config-label'>📊 Status</div>
+                    <div style='font-size:13px; color:#555;'>
+                        <div style='margin-bottom:8px; display:flex; justify-content:space-between;'>
+                            <span>Ergebnisse gesamt</span><span style='color:#fff'>{count}</span>
+                        </div>
+                        <div style='margin-bottom:8px; display:flex; justify-content:space-between;'>
+                            <span>Keywords aktiv</span><span style='color:#29B6F6'>{len(kw)}</span>
+                        </div>
+                        <div style='display:flex; justify-content:space-between;'>
+                            <span>Konkurrenten</span><span style='color:#29B6F6'>{len(comp)}</span>
+                        </div>
+                    </div>
+                </div>""", unsafe_allow_html=True)
 
             # ERGEBNISSE
-            st.markdown("<div class='cyber-divider'></div>", unsafe_allow_html=True)
-            st.markdown("<div class='section-title'>LETZTE SCOUT ERGEBNISSE</div>", unsafe_allow_html=True)
+            st.markdown("<div class='viki-divider'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='font-size:15px; font-weight:600; color:#fff; margin-bottom:12px;'>Letzte Ergebnisse</div>", unsafe_allow_html=True)
 
-            rows = get_scout_results(20)
+            rows = get_results(30)
             if rows:
-                # Filter
-                filter_type = st.selectbox("FILTER", ["ALLE", "TREND", "KONKURRENZ", "CHANCE"])
+                filter_col, _ = st.columns([1,3])
+                with filter_col:
+                    filt = st.selectbox("Filter", ["Alle","TREND","KONKURRENZ","CHANCE"], label_visibility="collapsed")
 
                 for row in rows:
                     rtype, title, source, summary, relevance, created_at = row
-                    if filter_type != "ALLE" and rtype != filter_type:
-                        continue
+                    if filt != "Alle" and rtype != filt: continue
 
-                    color_map = {"TREND": "#00d4ff", "KONKURRENZ": "#ff6b6b", "CHANCE": "#00ff88"}
-                    color = color_map.get(rtype, "#7b2fff")
-                    rel_color = {"HOCH": "#00ff88", "MITTEL": "#ffd700", "NIEDRIG": "#4a7a9b"}.get(relevance, "#4a7a9b")
+                    badge_class = {"TREND":"badge-trend","KONKURRENZ":"badge-konkurrenz","CHANCE":"badge-chance"}.get(rtype,"badge-trend")
+                    rel_class = {"HOCH":"rel-high","MITTEL":"rel-mid","NIEDRIG":"rel-low"}.get(relevance,"rel-low")
 
                     st.markdown(f"""
-                    <div class='result-card' style='border-left-color: {color};'>
-                        <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;'>
-                            <span style='font-family: Orbitron; font-size: 10px; color: {color};
-                                        border: 1px solid {color}; padding: 2px 8px; border-radius: 2px;'>
-                                {rtype}
-                            </span>
-                            <span style='font-family: Rajdhani; font-size: 10px; color: {rel_color}; letter-spacing: 1px;'>
-                                RELEVANZ: {relevance}
-                            </span>
+                    <div class='result-item'>
+                        <div style='display:flex; justify-content:space-between; align-items:center;'>
+                            <span class='result-badge {badge_class}'>{rtype}</span>
+                            <span class='{rel_class}'>↑ {relevance}</span>
                         </div>
-                        <div class='result-title'>{title}</div>
-                        <div class='result-source'>📡 {source} · {created_at[:10]}</div>
-                        <div class='result-summary'>{summary}</div>
+                        <div class='result-title-text'>{title}</div>
+                        <div class='result-summary-text'>{summary}</div>
+                        <div class='result-meta'>📡 {source} · {created_at[:10]}</div>
                     </div>
                     """, unsafe_allow_html=True)
             else:
                 st.markdown("""
-                <div style='text-align:center; padding: 60px; color: #1a3a6e;
-                            font-family: Orbitron; font-size: 14px; letter-spacing: 3px;'>
-                    KEINE DATEN · SCOUT STARTEN
+                <div style='text-align:center; padding:60px; color:#333; font-size:14px;'>
+                    Noch keine Daten · Scout starten um Marktanalyse zu laden
                 </div>
                 """, unsafe_allow_html=True)
 
-        # ANDERE AGENTEN (Coming Soon)
         else:
-            agent_names = {
-                "GROWTH HACKER": ("🧠", "Analysiert virale Trends & entwickelt Kampagnen-Strategien für VIKIphone", "PHASE 2 · COMING SOON"),
-                "CREATOR": ("✍️", "Schreibt Posts, Newsletter & Blogartikel basierend auf Scout-Daten", "PHASE 2 · COMING SOON"),
-                "NISCHEN-SPEZIALIST": ("🏥", "Erstellt branchenspezifischen Content für Arztpraxen, Handwerker, Kanzleien", "PHASE 2 · COMING SOON"),
-                "SEO-ARCHITEKT": ("🔍", "Keyword-Research & SEO-Artikel für organischen VIKIphone Traffic", "PHASE 2 · COMING SOON"),
+            # Andere Agenten Coming Soon
+            labels = {
+                "Growth Hacker": ("🧠", "Analysiert virale Trends und entwickelt Kampagnen-Strategien für VIKIphone"),
+                "Creator": ("✍️", "Schreibt Posts, Newsletter und Blogartikel basierend auf Scout-Daten"),
+                "Nischen-Spezialist": ("🏥", "Erstellt branchenspezifischen Content für Arztpraxen, Handwerker und Kanzleien"),
+                "SEO-Architekt": ("🔍", "Keyword-Research und SEO-optimierte Artikel für organischen VIKIphone Traffic"),
             }
-            for key, (icon, desc, status) in agent_names.items():
-                if key in agent_tab:
+            for key, (icon, desc) in labels.items():
+                if key in agent:
                     st.markdown(f"""
-                    <div class='agent-card'>
-                        <div style='font-family: Orbitron; font-size: 16px; color: #fff;'>{icon} {key}</div>
-                        <div style='font-family: Rajdhani; font-size: 14px; color: #4a7a9b; margin-top: 8px;'>{desc}</div>
-                        <div style='margin-top: 12px;'>
-                            <span style='font-family: Rajdhani; font-size: 10px; color: #1a3a6e;
-                                        letter-spacing: 2px; border: 1px solid #1a3a6e;
-                                        padding: 2px 8px; border-radius: 2px;'>{status}</span>
-                        </div>
+                    <div class='coming-soon'>
+                        <div style='font-size:40px; margin-bottom:16px;'>{icon}</div>
+                        <div style='font-family: Plus Jakarta Sans; font-size:18px; font-weight:700;
+                                    color:#fff; margin-bottom:8px;'>{key}</div>
+                        <div style='font-size:13px; color:#555; max-width:400px; margin:0 auto 16px;'>{desc}</div>
+                        <span style='background:rgba(41,182,246,0.1); color:#29B6F6; border-radius:20px;
+                                     padding:4px 16px; font-size:12px; font-weight:600;'>Coming Soon · Phase 2</span>
                     </div>
                     """, unsafe_allow_html=True)
 
     # ANDERE MODULE
-    elif "VERTRIEB" in seite:
-        st.markdown("<div class='page-title'>🎯 VERTRIEB</div>", unsafe_allow_html=True)
-        st.markdown("<div class='cyber-divider'></div>", unsafe_allow_html=True)
-        for name, desc in [("DEMO-HUNTER", "Findet & kontaktiert potenzielle VIKIphone Kunden"), ("LEAD-HUNTER", "Personalisierte Outreach E-Mails für Inbound Leads")]:
-            st.markdown(f"""<div class='agent-card'>
-                <div style='font-family: Orbitron; font-size: 14px; color: #fff;'>🎯 {name}</div>
-                <div style='color: #4a7a9b; margin-top: 8px;'>{desc}</div>
-                <div style='margin-top: 10px;'><span style='font-family: Rajdhani; font-size: 10px; color: #1a3a6e; letter-spacing: 2px; border: 1px solid #1a3a6e; padding: 2px 8px; border-radius: 2px;'>COMING SOON · PHASE 3</span></div>
+    elif "Vertrieb" in seite:
+        st.markdown("<div class='page-header'>Vertrieb</div><div class='page-sub'>Lead Management & Demo-Buchungen</div>", unsafe_allow_html=True)
+        for n,d in [("🎯 Demo-Hunter","Findet und kontaktiert potenzielle VIKIphone Kunden automatisch"),("📬 Lead-Hunter","Personalisierte Outreach E-Mails für Inbound Leads")]:
+            st.markdown(f"""<div class='coming-soon' style='margin-bottom:12px;'>
+                <div style='font-size:24px; margin-bottom:8px;'>{n.split()[0]}</div>
+                <div style='font-size:15px; font-weight:600; color:#fff; margin-bottom:6px;'>{n[2:]}</div>
+                <div style='font-size:13px; color:#555; margin-bottom:12px;'>{d}</div>
+                <span style='background:rgba(41,182,246,0.1); color:#29B6F6; border-radius:20px; padding:4px 16px; font-size:12px; font-weight:600;'>Coming Soon · Phase 3</span>
             </div>""", unsafe_allow_html=True)
 
-    elif "SUPPORT" in seite:
-        st.markdown("<div class='page-title'>🛰 SUPPORT</div>", unsafe_allow_html=True)
-        st.markdown("<div class='cyber-divider'></div>", unsafe_allow_html=True)
-        st.markdown("""<div class='agent-card'>
-            <div style='font-family: Orbitron; font-size: 14px; color: #fff;'>🛰 TICKET-MASTER</div>
-            <div style='color: #4a7a9b; margin-top: 8px;'>IMAP E-Mail Analyse & automatische Antwort-Entwürfe</div>
-            <div style='margin-top: 10px;'><span style='font-family: Rajdhani; font-size: 10px; color: #1a3a6e; letter-spacing: 2px; border: 1px solid #1a3a6e; padding: 2px 8px; border-radius: 2px;'>COMING SOON · PHASE 4</span></div>
+    elif "Support" in seite:
+        st.markdown("<div class='page-header'>Support</div><div class='page-sub'>E-Mail Assistenz & Ticket Management</div>", unsafe_allow_html=True)
+        st.markdown("""<div class='coming-soon'>
+            <div style='font-size:32px; margin-bottom:12px;'>🛰</div>
+            <div style='font-size:15px; font-weight:600; color:#fff; margin-bottom:6px;'>Ticket-Master</div>
+            <div style='font-size:13px; color:#555; margin-bottom:12px;'>IMAP E-Mail Analyse & automatische Antwort-Entwürfe</div>
+            <span style='background:rgba(41,182,246,0.1); color:#29B6F6; border-radius:20px; padding:4px 16px; font-size:12px; font-weight:600;'>Coming Soon · Phase 4</span>
         </div>""", unsafe_allow_html=True)
 
-    elif "BACKOFFICE" in seite:
-        st.markdown("<div class='page-title'>🗄 BACKOFFICE</div>", unsafe_allow_html=True)
-        st.markdown("<div class='cyber-divider'></div>", unsafe_allow_html=True)
-        st.markdown("""<div class='agent-card'>
-            <div style='font-family: Orbitron; font-size: 14px; color: #fff;'>🗄 BELEG-NERD</div>
-            <div style='color: #4a7a9b; margin-top: 8px;'>OCR PDF Extraktion → CSV in SQLite Datenbank</div>
-            <div style='margin-top: 10px;'><span style='font-family: Rajdhani; font-size: 10px; color: #1a3a6e; letter-spacing: 2px; border: 1px solid #1a3a6e; padding: 2px 8px; border-radius: 2px;'>COMING SOON · PHASE 3</span></div>
+    elif "Backoffice" in seite:
+        st.markdown("<div class='page-header'>Backoffice</div><div class='page-sub'>Rechnungen & Finanzdaten</div>", unsafe_allow_html=True)
+        st.markdown("""<div class='coming-soon'>
+            <div style='font-size:32px; margin-bottom:12px;'>🗄</div>
+            <div style='font-size:15px; font-weight:600; color:#fff; margin-bottom:6px;'>Beleg-Nerd</div>
+            <div style='font-size:13px; color:#555; margin-bottom:12px;'>OCR PDF Extraktion → automatische CSV Tabelle in SQLite</div>
+            <span style='background:rgba(41,182,246,0.1); color:#29B6F6; border-radius:20px; padding:4px 16px; font-size:12px; font-weight:600;'>Coming Soon · Phase 3</span>
         </div>""", unsafe_allow_html=True)
 
     elif "HR" in seite:
-        st.markdown("<div class='page-title'>👾 HR</div>", unsafe_allow_html=True)
-        st.markdown("<div class='cyber-divider'></div>", unsafe_allow_html=True)
-        st.markdown("""<div class='agent-card'>
-            <div style='font-family: Orbitron; font-size: 14px; color: #fff;'>👾 CV-SCANNER</div>
-            <div style='color: #4a7a9b; margin-top: 8px;'>Lebenslauf Matching & Interview-Fragen Generator</div>
-            <div style='margin-top: 10px;'><span style='font-family: Rajdhani; font-size: 10px; color: #1a3a6e; letter-spacing: 2px; border: 1px solid #1a3a6e; padding: 2px 8px; border-radius: 2px;'>COMING SOON · PHASE 3</span></div>
+        st.markdown("<div class='page-header'>HR & Recruiting</div><div class='page-sub'>Bewerbermanagement</div>", unsafe_allow_html=True)
+        st.markdown("""<div class='coming-soon'>
+            <div style='font-size:32px; margin-bottom:12px;'>👾</div>
+            <div style='font-size:15px; font-weight:600; color:#fff; margin-bottom:6px;'>CV-Scanner</div>
+            <div style='font-size:13px; color:#555; margin-bottom:12px;'>Lebenslauf Matching & Interview-Fragen Generator</div>
+            <span style='background:rgba(41,182,246,0.1); color:#29B6F6; border-radius:20px; padding:4px 16px; font-size:12px; font-weight:600;'>Coming Soon · Phase 3</span>
         </div>""", unsafe_allow_html=True)
