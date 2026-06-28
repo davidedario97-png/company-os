@@ -1,60 +1,64 @@
 import streamlit as st
 import yaml
-import os
-from yaml.loader import SafeLoader
+import bcrypt
 
 st.set_page_config(
-    page_title="Company OS",
+    page_title="Company OS | Vikiphone",
     page_icon="🏢",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# --- LOGIN ---
-import streamlit_authenticator as stauth
-
-credentials = {
-    "usernames": {
-        "admin": {
-            "name": "Administrator",
-            "password": "$2b$12$tgBi1dFDMBaDW5E8jAHBpuZL3NMgYkLpIZrnPkCBVkq0Z8YQkPqGy"
-        }
-    }
+# --- Einfaches Login ohne streamlit-authenticator ---
+USERS = {
+    "admin": "admin123"
 }
 
-authenticator = stauth.Authenticate(
-    credentials,
-    "company_os_cookie",
-    "company_os_key_2024",
-    30
-)
+def check_login(username, password):
+    if username in USERS and USERS[username] == password:
+        return True
+    return False
 
-name, authentication_status, username = authenticator.login("🔐 Company OS Login", "main")
+# Session State initialisieren
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "username" not in st.session_state:
+    st.session_state.username = ""
 
-if authentication_status == False:
-    st.error("❌ Falscher Benutzername oder Passwort")
-    st.info("Standard: **admin** / **admin123**")
+# --- LOGIN SCREEN ---
+if not st.session_state.logged_in:
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("## 🏢 Company OS")
+        st.markdown("### Vikiphone Dashboard")
+        st.markdown("---")
+        username = st.text_input("Benutzername")
+        password = st.text_input("Passwort", type="password")
+        if st.button("🔐 Einloggen", use_container_width=True):
+            if check_login(username, password):
+                st.session_state.logged_in = True
+                st.session_state.username = username
+                st.rerun()
+            else:
+                st.error("❌ Falscher Benutzername oder Passwort")
+        st.markdown("---")
+        st.info("Standard: **admin** / **admin123**")
 
-elif authentication_status == None:
-    st.warning("Bitte einloggen")
-    st.info("Standard: **admin** / **admin123**")
-
-elif authentication_status == True:
-    # SIDEBAR
+# --- DASHBOARD ---
+else:
     with st.sidebar:
         st.markdown("## 🏢 Company OS")
-        st.markdown(f"👋 Willkommen, **{name}**")
+        st.markdown(f"👋 Willkommen, **{st.session_state.username}**!")
         st.markdown("---")
-        
         seite = st.radio(
             "Navigation",
             ["📣 Marketing", "💼 Vertrieb", "🎧 Support", "📂 Backoffice", "👥 HR"]
         )
-        
         st.markdown("---")
-        authenticator.logout("🚪 Logout", "sidebar")
+        if st.button("🚪 Logout"):
+            st.session_state.logged_in = False
+            st.rerun()
 
-    # HAUPTBEREICH
     st.title(seite)
     st.markdown("---")
     st.info("🚧 Dieses Modul wird gerade gebaut. Kommt bald!")
