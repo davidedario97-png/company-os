@@ -456,7 +456,7 @@ def parse_json(text):
 # ============================================================
 # DEMO HUNTER AGENT
 # ============================================================
-def run_demo_hunter(zielgruppen, regionen, min_score, email_stil, daily_limit, absender_name):
+def run_lead_hunter(zielgruppen, regionen, min_score, email_stil, absender_name):
     ak, tk = get_keys()
     if not ak: st.error("⚠ ANTHROPIC_API_KEY fehlt!"); return 0
     if not tk: st.error("⚠ TAVILY_API_KEY fehlt!"); return 0
@@ -465,18 +465,11 @@ def run_demo_hunter(zielgruppen, regionen, min_score, email_stil, daily_limit, a
     status_box = st.empty()
     progress = st.progress(0)
 
-    today_count = get_today_count()
-    remaining = daily_limit - today_count
     seen_total = get_seen_count()
-
-    if remaining <= 0:
-        st.warning(f"⚠ Tageslimit erreicht! Morgen wieder verfügbar.")
-        return 0
-
     saved_count = 0
     skipped_dupes = 0
     search_num = 0
-    total_searches = len(zielgruppen) * min(len(regionen), 4)
+    total_searches = len(zielgruppen) * len(regionen)
 
     stil_guide = {
         "professionell": "Formal, respektvoll, Sie-Form, klar strukturiert",
@@ -485,10 +478,7 @@ def run_demo_hunter(zielgruppen, regionen, min_score, email_stil, daily_limit, a
     }.get(email_stil, "professionell")
 
     for zielgruppe in zielgruppen:
-        for region in regionen[:4]:
-            if saved_count >= remaining:
-                break
-
+        for region in regionen:
             search_num += 1
             progress.progress(min(int((search_num/total_searches)*70), 70))
             status_box.markdown(f"🔍 Suche **{zielgruppe}** in **{region}** · {saved_count} neue Leads · {skipped_dupes} bereits bekannt")
@@ -522,7 +512,7 @@ def run_demo_hunter(zielgruppen, regionen, min_score, email_stil, daily_limit, a
             progress.progress(min(int((search_num/total_searches)*70)+15, 88))
             status_box.markdown(f"🧠 Claude analysiert **{zielgruppe}** in **{region}**...")
 
-            prompt = f"""Du bist der Demo-Hunter für VIKIphone (KI-Telefonassistenz SaaS).
+            prompt = f"""Du bist der Lead-Hunter für VIKIphone (KI-Telefonassistenz SaaS).
 
 VIKIphone löst: Verpasste Anrufe, unbesetzte Rezeptionen, teure Call-Center.
 USPs: 24/7 KI-Assistent, Zero-Latency, DSGVO Medical Mode, Festnetz-Rufnummer.
@@ -556,7 +546,7 @@ Schreibe 1-2 Sätze was der Vertriebsmitarbeiter AM TELEFON als Einstieg sagen k
 Spezifisch auf diese Firma. Nutze Entscheider-Name wenn vorhanden.
 Beispiel: "Dr. Müller, ich rufe an weil Ihre Patienten Sie oft nicht erreichen..."
 
-E-MAIL (zusätzlich zur Kaltakquise):
+E-MAIL:
 Stil: {stil_guide}
 Absender: {absender_name} von VIKIphone
 Max 130 Wörter, persönlich, spezifisch
@@ -582,7 +572,7 @@ JSON FORMAT:
 }}]
 
 NUR Leads mit Score >= {min_score}.
-MAXIMAL {min(remaining - saved_count, 3)} Leads.
+MAXIMAL 3 Leads pro Suche.
 NUR JSON — kein anderer Text."""
 
             try:
@@ -671,7 +661,7 @@ else:
         """, unsafe_allow_html=True)
 
         seite = st.radio("nav", [
-            "🎯  Demo-Hunter", "🛰  Support", "🗄  Backoffice", "👾  HR"
+            "🎯  Lead-Hunter", "🛰  Support", "🗄  Backoffice", "👾  HR"
         ], label_visibility="collapsed")
 
         st.markdown("<div style='height:1px; background:#1e1e1e; margin:8px 16px;'></div>", unsafe_allow_html=True)
@@ -689,22 +679,22 @@ else:
             st.rerun()
 
     # ============================================================
-    # DEMO HUNTER
+    # LEAD HUNTER
     # ============================================================
-    if "Demo-Hunter" in seite:
+    if "Lead-Hunter" in seite:
         st.markdown("""
         <div style='display:flex; align-items:center; gap:12px; margin-bottom:2px;'>
-            <div class='page-header'>Demo-Hunter</div>
+            <div class='page-header'>Lead-Hunter</div>
             <span class='live-badge'>● LIVE</span>
             <span class='dedup-badge'>✓ Duplikat-Schutz aktiv</span>
         </div>
-        <div class='page-sub'>Findet täglich neue VIKIphone-Kunden mit Telefon & Entscheider-Name</div>
+        <div class='page-sub'>Findet neue VIKIphone-Kunden mit Telefon & Entscheider-Name</div>
         """, unsafe_allow_html=True)
 
         counts = get_counts()
-        today = get_today_count()
         seen = get_seen_count()
         cfg = get_config()
+        pending_n = counts.get("pending",0)
 
         # METRIKEN
         c1,c2,c3,c4,c5,c6 = st.columns(6)
@@ -748,7 +738,7 @@ else:
 
             with col_left:
                 st.markdown("""<div class='config-section'>
-                    <div class='config-label'>🔍 Was der Demo-Hunter macht</div>
+                    <div class='config-label'>🔍 Was der Lead-Hunter macht</div>
                     <div style='font-size:13px; color:#555; line-height:2.2;'>
                         <span style='color:#29B6F6'>①</span> Sucht <b style='color:#fff'>neue</b> Unternehmen deiner Zielgruppen (Duplikate werden übersprungen)<br>
                         <span style='color:#29B6F6'>②</span> Extrahiert: Firmenname · Adresse · <b style='color:#4CAF50'>Telefonnummer</b> · <b style='color:#4FC3F7'>Entscheider-Name</b><br>
@@ -772,39 +762,31 @@ else:
                     <div style='display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #1e1e1e;'>
                         <span>Mindest-Score</span><span style='color:#29B6F6; font-weight:700;'>{cfg.get("min_score",7)}/10</span>
                     </div>
-                    <div style='display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #1e1e1e;'>
-                        <span>E-Mail Stil</span><span style='color:#fff;'>{cfg.get("email_stil","professionell").title()}</span>
-                    </div>
                     <div style='display:flex; justify-content:space-between; padding:6px 0;'>
-                        <span>Tageslimit</span><span style='color:#fff;'>{today}/{cfg.get("daily_limit",10)} heute</span>
+                        <span>E-Mail Stil</span><span style='color:#fff;'>{cfg.get("email_stil","professionell").title()}</span>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
                 st.markdown("</div>", unsafe_allow_html=True)
 
             with col_right:
-                remaining = cfg.get("daily_limit",10) - today
                 st.markdown(f"""<div class='config-section'>
                     <div class='config-label'>🚀 Starten</div>
                     <div style='font-size:13px; color:#555; line-height:1.9; margin-bottom:16px;'>
-                        Noch <span style='color:#29B6F6; font-weight:700;'>{remaining}</span> Leads heute möglich<br>
                         <span style='color:#00BCD4;'>✓ {seen} Firmen bereits bekannt</span><br>
                         → werden automatisch übersprungen<br><br>
-                        Dauer: <span style='color:#fff;'>2-5 Minuten</span><br>
-                        Ergebnis: <span style='color:#fff;'>5-10 neue Leads</span>
+                        Dauer: <span style='color:#fff;'>2-5 Min pro Durchlauf</span><br>
+                        Ergebnis: <span style='color:#fff;'>5-15 neue Leads</span>
                     </div>
                 """, unsafe_allow_html=True)
 
-                if remaining > 0:
-                    if st.button("▶ Neue Leads suchen", use_container_width=True):
-                        n = run_demo_hunter(
-                            cfg["zielgruppen"], cfg["regionen"],
-                            cfg["min_score"], cfg["email_stil"],
-                            cfg["daily_limit"], cfg["absender_name"]
-                        )
-                        if n > 0: st.rerun()
-                else:
-                    st.warning("Tageslimit erreicht!")
+                if st.button("▶ Leads suchen", use_container_width=True):
+                    n = run_lead_hunter(
+                        cfg["zielgruppen"], cfg["regionen"],
+                        cfg["min_score"], cfg["email_stil"],
+                        cfg["absender_name"]
+                    )
+                    if n > 0: st.rerun()
 
                 st.markdown("</div>", unsafe_allow_html=True)
 
@@ -1012,7 +994,6 @@ else:
 
                 min_score = st.slider("Mindest-Score", 1, 10, cfg.get("min_score",7),
                     help="Nur Leads ab diesem Score werden gespeichert")
-                daily_limit = st.slider("Tageslimit", 5, 100, cfg.get("daily_limit",10))
                 email_stil = st.selectbox("E-Mail Stil",
                     ["professionell","locker","direkt"],
                     index=["professionell","locker","direkt"].index(cfg.get("email_stil","professionell")))
@@ -1046,7 +1027,7 @@ else:
             if st.button("💾 Konfiguration speichern", use_container_width=True):
                 new_zg = [z.strip() for z in zg_text.split("\n") if z.strip()]
                 new_reg = [r.strip() for r in reg_text.split("\n") if r.strip()]
-                save_config(new_zg, new_reg, min_score, email_stil, daily_limit, absender_name, absender_email)
+                save_config(new_zg, new_reg, min_score, email_stil, 999, absender_name, absender_email)
                 st.success("✅ Gespeichert!")
 
     # COMING SOON
