@@ -227,6 +227,22 @@ def init_db():
         created_at TEXT
     )""")
 
+    # Migration — fehlende Spalten automatisch hinzufügen
+    for col_sql in [
+        "ALTER TABLE leads ADD COLUMN adresse TEXT DEFAULT ''",
+        "ALTER TABLE leads ADD COLUMN entscheider_name TEXT DEFAULT ''",
+        "ALTER TABLE leads ADD COLUMN entscheider_titel TEXT DEFAULT ''",
+        "ALTER TABLE leads ADD COLUMN kaltakquise_notiz TEXT DEFAULT ''",
+        "ALTER TABLE leads ADD COLUMN notiz TEXT DEFAULT ''",
+        "ALTER TABLE leads ADD COLUMN zielgruppe TEXT DEFAULT ''",
+        "ALTER TABLE leads ADD COLUMN website TEXT DEFAULT ''",
+        "ALTER TABLE leads ADD COLUMN email_betreff TEXT DEFAULT ''",
+        "ALTER TABLE leads ADD COLUMN email_text TEXT DEFAULT ''",
+        "ALTER TABLE leads ADD COLUMN score_begruendung TEXT DEFAULT ''",
+    ]:
+        try: c.execute(col_sql)
+        except: pass
+
     # Bereits gesehene Firmen für Deduplizierung
     c.execute("""CREATE TABLE IF NOT EXISTS seen_leads (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -333,11 +349,31 @@ def save_lead(lead):
 def get_leads(status=None, limit=100):
     conn = sqlite3.connect("vikiphone_os.db")
     c = conn.cursor()
+    # Explizite Spalten — sicher gegen Schema-Unterschiede
+    query = """SELECT
+        id, firmenname, zielgruppe, ort,
+        COALESCE(adresse,'') as adresse,
+        COALESCE(telefon,'') as telefon,
+        COALESCE(email,'') as email,
+        COALESCE(website,'') as website,
+        COALESCE(entscheider_name,'') as entscheider_name,
+        COALESCE(entscheider_titel,'') as entscheider_titel,
+        COALESCE(bewertungen_anzahl,0) as bewertungen_anzahl,
+        COALESCE(bewertungen_score,0) as bewertungen_score,
+        COALESCE(score,0) as score,
+        COALESCE(score_begruendung,'') as score_begruendung,
+        COALESCE(email_betreff,'') as email_betreff,
+        COALESCE(email_text,'') as email_text,
+        COALESCE(kaltakquise_notiz,'') as kaltakquise_notiz,
+        COALESCE(status,'pending') as status,
+        COALESCE(notiz,'') as notiz,
+        created_at
+        FROM leads"""
     if status:
-        c.execute("""SELECT * FROM leads WHERE status=?
-            ORDER BY score DESC, id DESC LIMIT ?""", (status, limit))
+        c.execute(query + " WHERE status=? ORDER BY score DESC, id DESC LIMIT ?",
+                  (status, limit))
     else:
-        c.execute("SELECT * FROM leads ORDER BY score DESC, id DESC LIMIT ?", (limit,))
+        c.execute(query + " ORDER BY score DESC, id DESC LIMIT ?", (limit,))
     rows = c.fetchall(); conn.close()
     return rows
 
